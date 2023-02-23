@@ -1,0 +1,9 @@
+body{ background-color: white;margin: 0px;overflow: hidden;}
+#info {
+    position: absolute;
+    bottom: 0px;
+    left: 50px;
+    width: 30%;
+    text-align: left;
+    z-index: 1; 
+}
