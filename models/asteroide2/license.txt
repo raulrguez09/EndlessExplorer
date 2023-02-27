@@ -1,0 +1,11 @@
+Model Information:
+* title:	Asteroid-model-disjoined
+* source:	https://sketchfab.com/3d-models/asteroid-model-disjoined-73dd29ba0a6948cfb0d97fc62d7e0db2
+* author:	gkcealparslan (https://sketchfab.com/gkcealparslan)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Asteroid-model-disjoined" (https://sketchfab.com/3d-models/asteroid-model-disjoined-73dd29ba0a6948cfb0d97fc62d7e0db2) by gkcealparslan (https://sketchfab.com/gkcealparslan) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

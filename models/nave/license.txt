@@ -1,0 +1,11 @@
+Model Information:
+* title:	Spaceship
+* source:	https://sketchfab.com/3d-models/spaceship-1efc26312afe4d4c907ffcdba12f4a6a
+* author:	madalenacardoso (https://sketchfab.com/madalenacardoso)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Spaceship" (https://sketchfab.com/3d-models/spaceship-1efc26312afe4d4c907ffcdba12f4a6a) by madalenacardoso (https://sketchfab.com/madalenacardoso) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

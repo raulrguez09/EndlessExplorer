@@ -1,0 +1,11 @@
+Model Information:
+* title:	003 Asteroid Rock
+* source:	https://sketchfab.com/3d-models/003-asteroid-rock-acf400f6ccca400db89d845def013a88
+* author:	jacob_cash (https://sketchfab.com/jacob_cash)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "003 Asteroid Rock" (https://sketchfab.com/3d-models/003-asteroid-rock-acf400f6ccca400db89d845def013a88) by jacob_cash (https://sketchfab.com/jacob_cash) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

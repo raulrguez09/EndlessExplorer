@@ -21,7 +21,7 @@ let renderer, scene, camera;
 let grid, time = 0;
 
 // Variables para el manejo de los obstaculos y bonus
-let soldado, shipBody, ship, objectParent, obstaculo;
+let soldado, shipBody, ship, objectParent, obstaculo, esferaSup, esferaInf, cuerpoCap, bonus, asteroide, skyBox;
 
 // Otras globales
 let cameraControls, effectController;
@@ -52,9 +52,9 @@ function init()
     camera.rotateX(-20 * Math.PI / 180)
     camera.position.set(0,1.5,2);
 
-    //cameraControls = new OrbitControls( camera, renderer.domElement );
-    //cameraControls.target.set(0,1,0);
-    //camera.lookAt(0,1,0);
+    cameraControls = new OrbitControls( camera, renderer.domElement );
+    cameraControls.target.set(0,1,0);
+    camera.lookAt(0,1,0);
 
     // Eventos
     //renderer.domElement.addEventListener('keydown', keydown.bind(this));
@@ -63,33 +63,66 @@ function init()
     document.addEventListener('keyup', keyup)
 }
 
+function update(){
+    angulo += 0.01;
+    time += clock.getDelta();
+    translateX += speedX * -0.1;
+
+    grid.material.uniforms.time.value = time;
+    objectParent.position.z = speedZ * time;
+
+    grid.material.uniforms.translateX.value = translateX;
+    objectParent.position.x = translateX;
+    
+    objectParent.traverse((child) => {
+      if (child instanceof THREE.Mesh || child instanceof THREE.Object3D){
+        const childZPos = child.position.z + objectParent.position.z;
+        if (childZPos > 0){
+          if(child.userData.type === 'obstaculo'){
+            setupObstacle(child, -translateX, -objectParent.position.z)
+          }else if(child.userData.type === 'bonus'){
+            setupBonus(child, -translateX, -objectParent.position.z)
+          }
+        }
+      }
+    });
+}
+
 function loadScene(){
     // Material sencillo
     // const materialSuelo = new THREE.MeshBasicMaterial({color:'yellow'});
     // const materialNave = new THREE.MeshBasicMaterial({color:'black'});
-    scene.add( new THREE.AxesHelper(3) );
+    scene.add( new THREE.AxesHelper(3) );    
+    console.log(scene)
+    scene.background = new THREE.CubeTextureLoader().setPath('./images/cosa/').load(
+      [
+      'posx.jpg',
+      'negx.jpg',
+      'posy.jpg',
+      'negy.jpg',
+      'posz.jpg',
+      'negz.jpg'
+      ]
+    )
 
-    shipBody = new THREE.Mesh(new THREE.TetrahedronBufferGeometry(0.4), new THREE.MeshBasicMaterial({ color: 0xbbccdd }));
-    shipBody.rotateX(45 * Math.PI / 180);
-    shipBody.rotateY(45 * Math.PI / 180);
+    // var geometry = new THREE.SphereGeometry(1000, 60, 40);
+		// var material = new THREE.MeshBasicMaterial();
+		// material.map = THREE.ImageUtils.loadTexture("images/Sky.jpg");
+		// material.side = THREE.BackSide;
+		// skyBox = new THREE.Mesh(geometry, material);
+		// scene.background = skyBox;
 
-    ship = new THREE.Group();
-    ship.add(shipBody);
-    scene.add(shipBody);
+    const gltfLoader2 = new GLTFLoader();
+      gltfLoader2.load('./models/nave2/scene.gltf', (gltf) => {
+        gltf.scene.position.set(0,0,0)
+        gltf.scene.rotateX(-70 * Math.PI / 180); // rojo
+        gltf.scene.rotateZ(45 * Math.PI / 180); //azul
+        //gltf.scene.rotateY(15 * Math.PI / 180); // verde
+        scene.add(gltf.scene)
+    });
 
-    // Importamos el modelo del soldado
-    // const loader = new THREE.ObjectLoader();
-    // loader.load('models/soldado/soldado.json', 
-    // function (objeto)
-    // {
-    //     soldado = new THREE.Object3D();
-    //     soldado.add(objeto);
-    //     scene.add(soldado);
-    //     soldado.position.y = 1;
-    //     soldado.rotateX(-45 * Math.PI / 100);
-    //     soldado.rotateY(50 * Math.PI / 100);
-    //     soldado.name = 'soldado';
-    // });
+    const light = new THREE.AmbientLight( 0x404040, 10 ); // soft white light
+    scene.add( light );
 
     // Creamos y establecemos la animación del fondo 
     setupGrid();
@@ -98,20 +131,23 @@ function loadScene(){
     objectParent = new THREE.Group();
     scene.add(objectParent);
 
-    for( let i = 0; i < 10; i++){
+    for( let i = 0; i < 5; i++){
       spawnObstacle();
     }
 
-    for( let i = 0; i < 10; i++){
+    for( let i = 0; i < 5; i++){
       spawnBonus();
     }
+
+    // scene.background = new THREE.Color(0x2a3b4c)
 }
 
 function setupGrid(){
   var division = 30;
   var limit = 200;
-  grid = new THREE.GridHelper(limit * 2, division, "blue", "blue");
-  
+  grid = new THREE.GridHelper(limit * 2, division);
+  grid.visible = false
+
   var moveable = [];
   var moveableX = [];
   for (let i = 0; i <= division; i++) {
@@ -199,17 +235,28 @@ function setupGUI()
 }
 
 function spawnObstacle(){
-  let geometriaObst = new THREE.BoxBufferGeometry(1, 1, 1);
-  let materialObst = new THREE.MeshBasicMaterial({color: 0xccdeee})
-  obstaculo = new THREE.Mesh(geometriaObst, materialObst)
+  // let geometriaObst = new THREE.BoxBufferGeometry(1, 1, 1);
+  // let materialObst = new THREE.MeshBasicMaterial({color: 0xccdeee})
+  // obstaculo = new THREE.Mesh(geometriaObst, materialObst)
 
-  setupObstacle(obstaculo);
-  
-  objectParent.add(obstaculo)
+  // setupObstacle(obstaculo);
+  //objectParent.add(obstaculo)
+
+  const gltfLoader = new GLTFLoader();
+  gltfLoader.load('./models/old/scene.gltf', (gltf) => {
+    gltf.scene.traverse((child) => {
+      if (child instanceof THREE.Mesh){
+        scene.add(child)
+        setupObstacle(child);
+        objectParent.add(child)        
+      }
+    });
+  });
 }
 
 function setupObstacle(obstaculo, refXPos = 0, refZPos = 0){
-  obstaculo.scale.set(randomFloat(0.5, 2), randomFloat(0.5, 2), randomFloat(0.5, 2))
+  var rand = randomFloat(0.5, 4)
+  obstaculo.scale.set(rand, rand, rand)
 
   obstaculo.position.set(refXPos + randomFloat(-30, 30), obstaculo.scale.y * 0.5, refZPos - 100 - randomFloat(0,100))
 
@@ -217,12 +264,21 @@ function setupObstacle(obstaculo, refXPos = 0, refZPos = 0){
 }
 
 function spawnBonus(){
-  let geometriaBonus = new THREE.SphereBufferGeometry(1, 12, 12);
-  let materialBonus = new THREE.MeshBasicMaterial({color: 0x000000})
-  let bonus = new THREE.Mesh(geometriaBonus, materialBonus)
+  bonus = new THREE.Object3D();
+
+  esferaSup = new THREE.Mesh(new THREE.SphereGeometry(1,64,32,0,Math.PI),  new THREE.MeshPhongMaterial({color: 0x4B4B4B}));
+  esferaSup.rotateX(-90 * Math.PI / 180)
+  esferaSup.position.y = 1
+  esferaInf = new THREE.Mesh(new THREE.SphereGeometry(1,15,20,0,Math.PI),  new THREE.MeshPhongMaterial({color: 0x4B4B4B}));
+  esferaInf.rotateX(90 * Math.PI / 180)
+  esferaInf.position.y = -1
+  cuerpoCap = new THREE.Mesh(new THREE.CylinderGeometry( 1, 1, 2, 32, 64 ),  new THREE.MeshBasicMaterial({color: 0x4ee138}));
+  
+  bonus.add(esferaSup)
+  bonus.add(esferaInf)
+  bonus.add(cuerpoCap)
 
   setupBonus(bonus)
-
   objectParent.add(bonus)
 }
 
@@ -232,9 +288,6 @@ function setupBonus(bonus, refXPos = 0, refZPos = 0){
 
   const size = ratio * 0.5;
   bonus.scale.set(size, size, size)
-
-  const hue = 0.5 + 0.5 * ratio;
-  bonus.material.color.setHSL(hue, 1, 0.5)
 
   bonus.position.set(refXPos + randomFloat(-30, 30), bonus.scale.y * 0.5, refZPos - 100 - randomFloat(0,100))
 
@@ -283,40 +336,6 @@ function animate(event)
         easing( TWEEN.Easing.Exponential.InOut ).
         start();
     }
-}
-
-function update()
-{
-    angulo += 0.01;
-    time += clock.getDelta();
-    translateX += speedX * -0.1;
-
-    grid.material.uniforms.time.value = time;
-    objectParent.position.z = speedZ * time;
-
-    grid.material.uniforms.translateX.value = translateX;
-    objectParent.position.x = translateX;
-    
-    objectParent.traverse((child) => {
-      if (child instanceof THREE.Mesh){
-        const childZPos = child.position.z + objectParent.position.z;
-        if (childZPos > 0){
-          if(child.userData.type === 'obstaculo'){
-            setupObstacle(child, -translateX, -objectParent.position.z)
-          }else{
-            setupBonus(child, -translateX, -objectParent.position.z)
-          }
-        }
-      }
-    });
-
-    //esferaCubo.rotation.y = angulo;
-    // Lectura de controles en GUI (es mejor hacerlo con onChange)
-    // cubo.position.set( -1-effectController.separacion/2, 0, 0 );
-    // esfera.position.set( 1+effectController.separacion/2, 0, 0 );
-    // cubo.material.setValues( { color: effectController.colorsuelo } );
-    // esferaCubo.rotation.y = effectController.giroY * Math.PI/180;
-    // TWEEN.update();
 }
 
 function render()
