@@ -94,23 +94,16 @@ function loadScene(){
     // const materialNave = new THREE.MeshBasicMaterial({color:'black'});
     scene.add( new THREE.AxesHelper(3) );    
     console.log(scene)
-    scene.background = new THREE.CubeTextureLoader().setPath('./images/cosa/').load(
+    scene.background = new THREE.CubeTextureLoader().setPath('./images/skybox/').load(
       [
-      'posx.jpg',
-      'negx.jpg',
-      'posy.jpg',
-      'negy.jpg',
-      'posz.jpg',
-      'negz.jpg'
+      'right.png', // pos x - right
+      'left.png', // neg x - left
+      'top.png', // pos y - up
+      'bottom.png', // neg y - down
+      'back.png', // pos z - back
+      'front.png', // neg z - front
       ]
     )
-
-    // var geometry = new THREE.SphereGeometry(1000, 60, 40);
-		// var material = new THREE.MeshBasicMaterial();
-		// material.map = THREE.ImageUtils.loadTexture("images/Sky.jpg");
-		// material.side = THREE.BackSide;
-		// skyBox = new THREE.Mesh(geometry, material);
-		// scene.background = skyBox;
 
     const gltfLoader2 = new GLTFLoader();
       gltfLoader2.load('./models/nave2/scene.gltf', (gltf) => {
@@ -131,7 +124,7 @@ function loadScene(){
     objectParent = new THREE.Group();
     scene.add(objectParent);
 
-    for( let i = 0; i < 5; i++){
+    for( let i = 0; i < 0; i++){
       spawnObstacle();
     }
 
@@ -350,6 +343,12 @@ function keydown(event){
     switch (event.key) {
       case 'ArrowLeft':
         newSpeedX = -1.0;
+        var ori = {p:  -Math.PI/2};
+        var dest = {p: Math.PI/2};
+        var joscilar1 = new TWEEN.Tween(ori).to(dest,1500).easing(TWEEN.Easing.Quadratic.InOut)
+        .onUpdate(function(){
+        that.pendulo.rotation.z = ori.p/2;
+      }).yoyo(true).repeat(Infinity);
         break;
       case 'ArrowRight':
         newSpeedX = 1.0;
