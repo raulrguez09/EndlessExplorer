@@ -20,6 +20,7 @@ import {GLTFLoader} from "../lib/GLTFLoader.module.js";
 import {OrbitControls} from "../lib/OrbitControls.module.js";
 import {TWEEN} from "../lib/tween.module.min.js";
 import {GUI} from "../lib/lil-gui.module.min.js";
+//import {Howl} from "../lib/howler.min.js";
 
 // Variables estandar de la escena
 let renderer, scene, camera;
@@ -27,7 +28,7 @@ let cameraControls, effectController;
 
 // Variables para el control del fondo de la escena
 let grid, time = 0;
-let speedZ = 20, speedX = 0, translateX = 0;
+let speedZ = 50, speedX = 0, translateX = 0;
 let clock = new THREE.Clock();
 
 // Variables para la gestion de los objetos de la escena
@@ -35,6 +36,24 @@ let objectParent, esferaSup, esferaInf, cuerpoCap, bonus;
 
 // Variables para el control de la informacion de la partida
 let health = 10, score = 0; 
+
+// Inicializamos la música y los efectos de sonido
+let background_music = new Howl({
+  src: ['./music/soundtrack.mp3'],
+  autoplay: true,
+  loop: true,
+  volume: 0.2,
+})
+
+let hit_sound = new Howl({
+  src: ['./music/hit.mp3'],
+  volume: 0.3,
+})
+
+let bonus_sound = new Howl({
+  src: ['./music/reward.mp3'],
+  volume: 0.5,
+})
 
 // Valores de las variables de game-info
 let divScore = document.getElementById('score')
@@ -133,6 +152,9 @@ function init(){
   // Eventos de teclado
   document.addEventListener('keydown', keydown)
   document.addEventListener('keyup', keyup)
+
+  // Ponemos la música de fondo
+  background_music.play();
 }
 
 
@@ -153,6 +175,7 @@ function update(){
     translateX += speedX * -0.1;
 
     grid.material.uniforms.time.value = time;
+    speedZ = effectController.velocidad;
     objectParent.position.z = speedZ * time;
 
     grid.material.uniforms.translateX.value = translateX;
@@ -205,6 +228,7 @@ function checkCollisions(){
       if(childZPos > -limiteZ && Math.abs(child.position.x - (-translateX)) < limiteX){
         // Realizamos las acciones oportunas si chocamos con un objeto
         if(child.userData.type === 'obstaculo'){
+          hit_sound.play()
           health -= 10
           divHealth.value = health
           setupObstacle(child, -translateX, -objectParent.position.z)
@@ -214,6 +238,7 @@ function checkCollisions(){
         
         // Realizamos las acciones oportunas si chocamos con un bonus
         }else if(child.userData.type === 'bonus'){
+          bonus_sound.play()
           score += child.userData.bonusPrice
           divScore.innerText = score
 
@@ -356,7 +381,6 @@ function loadScene(restart){
 }
 
 
-
 //---------------------------------------------------------------------//
 // Nombre: setupGrid                                                   //
 // Descripcion: función que crea la cuadricula y los shaders que nos   //
@@ -443,28 +467,29 @@ function setupGrid(){
 
 //---------------------------------------------------------------------//
 // Nombre: setupGUI                                                    //
-// Descripcion: 
+// Descripcion: función que muestra una interfaz interactiva para      //
+//              modificar aspectos del juego como la velocidad o la    //
+//              música                                                 //
 //---------------------------------------------------------------------//
 function setupGUI()
 {
 	// Definicion de los controles
 	effectController = {
-		mensaje: 'Soldado & Robota',
-		giroY: 0.0,
-		separacion: 0,
-		colorsuelo: "rgb(150,150,150)"
+		velocidad: 20,
+		play: function(){background_music.play();},
+		stop: function(){background_music.stop();},
+		color: "rgb(150,150,150)"
 	};
 
 	// Creacion interfaz
 	const gui = new GUI();
 
-	// Construccion del menu
-	const h = gui.addFolder("Control esferaCubo");
-	h.add(effectController, "mensaje").name("Aplicacion");
-	h.add(effectController, "giroY", -180.0, 180.0, 0.025).name("Giro en Y");
-	h.add(effectController, "separacion", { 'Ninguna': 0, 'Media': 2, 'Total': 5 }).name("Separacion");
-    h.addColor(effectController, "colorsuelo").name("Color alambres");
-
+	// // Construccion del menu
+	const h = gui.addFolder("Game settings");
+  h.add(effectController, "velocidad", { 'Fácil': 20, 'Normal': 40, 'Difícil': 60 }).name("Velocidad");
+  const i = gui.addFolder("Audio settings");
+  i.add(effectController, "stop").name("Stop music");
+  i.add(effectController, "play").name("Play music");
 }
 
 
