@@ -34,20 +34,35 @@ let clock = new THREE.Clock();
 let objectParent, esferaSup, esferaInf, cuerpoCap, bonus;
 
 // Variables para el control de la informacion de la partida
-let health = 100, score = 0; 
+let health = 10, score = 0; 
 
+// Valores de las variables de game-info
 let divScore = document.getElementById('score')
 let divHealth = document.getElementById('health')
 let divDistance = document.getElementById('distance')
 
+let divEndPanel = document.getElementById('end-panel')
+let divEndScore = document.getElementById('end-score')
+let divEndDistance = document.getElementById('end-distance')
+
+// Inicializamos las variables de game-info
 divScore.innerText = score
 divDistance.innerText = 0
 divHealth.value = 100
 
+// Inicializamos los estados del juego
 let jugar = false;
+let restart = false;
+
+// Acciones trass pulsar los diferentes botones
 document.getElementById('start').onclick = () => {
   jugar = true;
   document.getElementById('intro-panel').style.display = 'none'
+}
+
+document.getElementById('restart').onclick = () => {
+  jugar = true;
+  divEndPanel.style.display = 'none'
 }
 
 
@@ -56,7 +71,7 @@ document.getElementById('start').onclick = () => {
 //***********************************************/
 
 init();
-loadScene();
+loadScene(restart);
 setupGUI();
 render();
 
@@ -210,14 +225,36 @@ function checkCollisions(){
 }
 
 
-
+//---------------------------------------------------------------------//
+// Nombre: gameOver                                                    //
+// Descripcion: función que muestra el resultado del fin de juego y    //
+//              reinicia la escena para poder jugar de nuevo           //
+//---------------------------------------------------------------------//
 function gameOver(){
+  // Modificamos el estado del juego
+  // Mostramos los resultados con la pantalla final
   jugar = false;
-
-  divScore.innerText = score
-  divDistance.innerText = 0
-  divHealth.value = 100
-
+  divEndScore.innerText = score
+  divEndDistance.innerText = objectParent.position.z.toFixed(0)
+  setTimeout(() => {
+    divEndPanel.style.display = 'grid'
+    
+    // Reseteamos las variables e iniciamos la escena de nuevo
+    jugar = false;
+    speedZ = 20, speedX = 0, translateX = 0;
+    
+    grid, time = 0;
+    clock = new THREE.Clock();
+    
+    health = 10, score = 0;
+    
+    divScore.innerText = score
+    divDistance.innerText = 0
+    divHealth.value = 100
+    
+    restart = true;
+    loadScene(restart);
+  }, 1000)
 }
 
 
@@ -226,85 +263,98 @@ function gameOver(){
 // Descripcion: función que crea los diferentes elementos de la escena //
 //              como la nave, los obtáculos, los bonus, etc.           //
 //---------------------------------------------------------------------//
-function loadScene(){
-  scene.add( new THREE.AxesHelper(3) ); 
+function loadScene(restart){
+  if(!restart){
+    //scene.add( new THREE.AxesHelper(3) );
+    // Importamos el modelo 3D de la nave a la escena
+    // https://sketchfab.com/search?features=downloadable&q=spaceship&type=models
+    const gltfLoader2 = new GLTFLoader();
+    gltfLoader2.load('./models/nave2/scene.gltf', (gltf) => {
+      gltf.scene.name = 'nave';
+      gltf.scene.position.set(0,0,0)
+      gltf.scene.rotateX(-70 * Math.PI / 180); // rojo
+      gltf.scene.rotateZ(45 * Math.PI / 180); // azul
+      
+      scene.add(gltf.scene)
+    });
   
-  // Importamos el modelo 3D de la nave a la escena
-  // https://sketchfab.com/search?features=downloadable&q=spaceship&type=models
-  const gltfLoader2 = new GLTFLoader();
-  gltfLoader2.load('./models/nave2/scene.gltf', (gltf) => {
-    gltf.scene.name = 'nave';
-    gltf.scene.position.set(0,0,0)
-    gltf.scene.rotateX(-70 * Math.PI / 180); // rojo
-    gltf.scene.rotateZ(45 * Math.PI / 180); // azul
+    // Creamos y establecemos la animación de la
+    // cuadrícula de la escena
+    setupGrid();
+      
+    // Creamos el grupo al que pertenecerán los obstaculos
+    // y los bonus
+    objectParent = new THREE.Group();
+    scene.add(objectParent);
+  
+    // Creamos los obstáculos y los bonus de la escena
+    for( let i = 0; i < 5; i++){
+      spawnObstacle();
+      spawnBonus();
+    }
+  
+    var geometry = new THREE.SphereGeometry( 12,64,32,0 );
+    //const texture = new THREE.TextureLoader().load( './images/sun.jpg' );
+    const material = new THREE.MeshPhongMaterial({ emissive: 0xffffdf});
+    var sphere = new THREE.Mesh( geometry, material );
+    sphere.position.set(-90, 20, -90)
     
-    scene.add(gltf.scene)
-  });
-
-  // Creamos y establecemos la animación de la
-  // cuadrícula de la escena
-  setupGrid();
+  
+    const haloVertexShader = /*glsl*/`
+    varying vec3 vertexNormal;
+    void main() {
+         vertexNormal = normal;
+         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);   
+    }
+    `;
+    const haloFragmentShader = /*glsl*/`
+    varying vec3 vertexNormal;
+    void main() {
+    float intensity = pow(0.9 - dot(vertexNormal, vec3(0, 0, 1.0)), 2.0);
+    gl_FragColor = vec4(0.8, 1.0, 0.6, 0.2) * intensity;
+    }
+    `;
+    const halo = new THREE.Mesh(
+         new THREE.SphereGeometry(12,64,32,0),
+         new THREE.ShaderMaterial({
+              vertexShader:haloVertexShader,
+              fragmentShader:haloFragmentShader,
+              blending: THREE.AdditiveBlending,
+              side: THREE.BackSide
+         })
+    )
     
-  // Creamos el grupo al que pertenecerán los obstaculos
-  // y los bonus
-  objectParent = new THREE.Group();
-  scene.add(objectParent);
-
-  // Creamos los obstáculos y los bonus de la escena
-  for( let i = 0; i < 5; i++){
-    spawnObstacle();
-    spawnBonus();
-  }
-
-  var geometry = new THREE.SphereGeometry( 12,64,32,0 );
-  //const texture = new THREE.TextureLoader().load( './images/sun.jpg' );
-  const material = new THREE.MeshPhongMaterial({ emissive: 0xffffdf});
-  var sphere = new THREE.Mesh( geometry, material );
-  sphere.position.set(-90, 20, -90)
+    scene.add(sphere);
+    halo.scale.set(1.2, 1.2, 1.2);
+    halo.position.set(-90, 20, -90)
+    scene.add(halo);
   
-
-  const haloVertexShader = /*glsl*/`
-  varying vec3 vertexNormal;
-  void main() {
-       vertexNormal = normal;
-       gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);   
+    // Añadimos el fondo de la escena, utilizando la técnica de skyBox
+    scene.background = new THREE.CubeTextureLoader().setPath('./images/skybox/').load(
+      [
+      'right.png', // pos x - right
+      'left.png', // neg x - left
+      'top.png', // pos y - up
+      'bottom.png', // neg y - down
+      'back.png', // pos z - back
+      'front.png', // neg z - front
+      ]
+    )
+  } else{
+    objectParent.traverse((child) => {
+      if (child instanceof THREE.Mesh || child instanceof THREE.Object3D){
+        if(child.userData.type === 'obstaculo'){
+          setupObstacle(child)
+        }else if(child.userData.type === 'bonus'){
+          child.userData.bonusPrice = setupBonus(child)
+        }
+      } else{
+        child.position.set(0,0,0)
+      }
+    })
   }
-  `;
-  const haloFragmentShader = /*glsl*/`
-  varying vec3 vertexNormal;
-  void main() {
-  float intensity = pow(0.9 - dot(vertexNormal, vec3(0, 0, 1.0)), 2.0);
-  gl_FragColor = vec4(0.8, 1.0, 0.6, 0.2) * intensity;
-  }
-  `;
-  const halo = new THREE.Mesh(
-       new THREE.SphereGeometry(12,64,32,0),
-       new THREE.ShaderMaterial({
-            vertexShader:haloVertexShader,
-            fragmentShader:haloFragmentShader,
-            blending: THREE.AdditiveBlending,
-            side: THREE.BackSide
-       })
-  )
-  
-  scene.add(sphere);
-  halo.scale.set(1.2, 1.2, 1.2);
-  halo.position.set(-90, 20, -90)
-  scene.add(halo);
-
-
-  // Añadimos el fondo de la escena, utilizando la técnica de skyBox
-  scene.background = new THREE.CubeTextureLoader().setPath('./images/skybox/').load(
-    [
-    'right.png', // pos x - right
-    'left.png', // neg x - left
-    'top.png', // pos y - up
-    'bottom.png', // neg y - down
-    'back.png', // pos z - back
-    'front.png', // neg z - front
-    ]
-  )
 }
+
 
 
 //---------------------------------------------------------------------//
@@ -550,7 +600,10 @@ function randomNumber(min, max, type){
 }
 
 
-
+//---------------------------------------------------------------------//
+// Nombre: render                                                      //
+// Descripcion: función que realiza la renderización de la escena      //
+//---------------------------------------------------------------------//
 function render()
 {
     requestAnimationFrame(render);
@@ -580,7 +633,12 @@ function animateShip(target, delay){
 }
 
 
-
+//---------------------------------------------------------------------//
+// Nombre: keydown                                                     //
+// Parametros: event (Object) - objeto que recoge el evento            //
+// Descripcion: función que realiza acciones tras el evento de         //
+//              mantener pulado una tecla                              //
+//---------------------------------------------------------------------//
 function keydown(event){
   let newSpeedX;
     switch (event.key) {
@@ -601,7 +659,12 @@ function keydown(event){
 }
 
 
-
+//---------------------------------------------------------------------//
+// Nombre: keyup                                                       //
+// Parametros: event (Object) - objeto que recoge el evento            //
+// Descripcion: función que realiza acciones tras el evento de dejar   //
+//              de pulsar una tecla                                    //
+//---------------------------------------------------------------------//
 function keyup(event){
   speedX = 0;
   animateShip(0, 0.5)

@@ -64,7 +64,8 @@ body{
 }
 
 /* Cosas del inicio */
-#intro-panel {
+#intro-panel,
+#end-panel {
     display: grid;
     place-items: center;
     position: absolute;
@@ -78,17 +79,23 @@ body{
     z-index: 10;
 }
 
-#intro-column {
-    /* justify-content: center; */
-    background-color: white;
+#end-panel {
+    display: none;
+}
+
+#intro-column,
+#end-colum {
+    justify-content: center; 
 }
   
-#intro-titulo {
+#intro-titulo,
+#end-titulo {
     font-size: 8rem;
     margin-bottom: 3rem;
 }
 
-#start {
+#start,
+#restart {
     margin:0 auto;
     display:block;
     text-align:center; 
@@ -99,14 +106,28 @@ body{
     font-family: monospace;
     border: 1px solid white;
     padding: 0.5rem;
+    margin-top: 3rem;
     cursor: pointer;
     
 }
 
-#start:hover {
+#start:hover,
+#restart:hover {
     background-color: #302b5e;
 }
 
-#start:active {
+#start:active,
+#restart:active {
     background-color: #0f0a49;
+}
+
+#end-score-row, #end-distance-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+}
+
+#end-score, #end-distance {
+    margin-left: 0.5rem;
 }
