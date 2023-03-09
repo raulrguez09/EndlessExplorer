@@ -33,7 +33,7 @@ let clock = new THREE.Clock();
 
 // Variables para la gestion de los objetos de la escena
 let objectParent, esferaSup, esferaInf, cuerpoCap, bonus, energy, bullet;
-let disparar = false, cargado = false;
+let disparar = false, cargado = false, cargando = false;
 
 // Variables para el control de la informacion de la partida
 let health = 10, score = 0; 
@@ -55,9 +55,22 @@ let bonus_sound = new Howl({
   volume: 0.5,
 })
 
+let shoot_sound = new Howl({
+  src: ['./music/shoot.mp3'],
+  volume: 0.5,
+})
+
+let load_sound = new Howl({
+  src: ['./music/load_2.mp3'],
+  volume: 0.2,
+  loop: true,
+})
+
+
 // Valores de las variables de game-info
 let divScore = document.getElementById('score')
 let divHealth = document.getElementById('health')
+let divLoad = document.getElementById('load')
 let divDistance = document.getElementById('distance')
 
 let divEndPanel = document.getElementById('end-panel')
@@ -68,6 +81,7 @@ let divEndDistance = document.getElementById('end-distance')
 divScore.innerText = score
 divDistance.innerText = 0
 divHealth.value = 100
+divLoad.value = 0
 
 // Inicializamos los estados del juego
 let jugar = false;
@@ -356,7 +370,7 @@ function loadScene(restart){
     // y los bonus
     objectParent = new THREE.Group();
     scene.add(objectParent);
-  
+    
     // Creamos los obstáculos y los bonus de la escena
     for( let i = 0; i < 5; i++){
       //spawnObstacle();
@@ -720,8 +734,16 @@ function keydown(event){
         break;
       case 'Control':
         newSpeedX = 0.0;
+        
+        if(energy.material.opacity == 0){
+          load_sound.play();
+        }
+
         if(energy.material.opacity <= 1){
+          console.log("pepe")
           energy.material.opacity += 0.02
+          divLoad.value = energy.material.opacity * 10
+          console.log(divLoad.value)
         }else{
           cargado = true;
         }
@@ -748,8 +770,11 @@ function keyup(event){
     case 'Control':
       if(cargado){
         energy.material.opacity = 0
+        divLoad.value = 0
         bullet.material.opacity = 1
         disparar = true;
+        load_sound.stop();
+        shoot_sound.play();
         cargado = false;
       }
       break;
