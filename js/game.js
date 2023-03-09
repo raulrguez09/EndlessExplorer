@@ -32,7 +32,8 @@ let speedZ = 50, speedX = 0, translateX = 0;
 let clock = new THREE.Clock();
 
 // Variables para la gestion de los objetos de la escena
-let objectParent, esferaSup, esferaInf, cuerpoCap, bonus;
+let objectParent, esferaSup, esferaInf, cuerpoCap, bonus, energy, bullet;
+let disparar = false, cargado = false;
 
 // Variables para el control de la informacion de la partida
 let health = 10, score = 0; 
@@ -40,7 +41,6 @@ let health = 10, score = 0;
 // Inicializamos la música y los efectos de sonido
 let background_music = new Howl({
   src: ['./music/soundtrack.mp3'],
-  autoplay: true,
   loop: true,
   volume: 0.2,
 })
@@ -100,18 +100,6 @@ render();
 //***********************************************/
 
 //---------------------------------------------------------------------//
-// Function name: checkJobExistence                                    //
-// Params: ID (String) - identificador del trabajo                     //
-//         ID_MAP (Map) - mapa que almacena los ID's de los trabajos   //
-//                        actuales                                     //
-// Definition: Funcion que comprueba la existencia de un trabajo, dado //
-//             dado su identificador                                   //
-// Return: Devuelve un booleano cuyo valor será true - cuando el       //
-//         trabajo exista o haya existido, y false - cuando el trabajo //
-//         no exista, ni haya existido                                 //
-//---------------------------------------------------------------------//
-
-//---------------------------------------------------------------------//
 // Nombre: init                                                        //
 // Descripcion: función que instancia las principales variables de la  //
 //              escenea (motor de render, nodo raíz de la escena,      //
@@ -154,7 +142,7 @@ function init(){
   document.addEventListener('keyup', keyup)
 
   // Ponemos la música de fondo
-  background_music.play();
+  //background_music.play();
 }
 
 
@@ -204,6 +192,14 @@ function update(){
     // Comprobamos las posibles colisiones con los objetos de la escena
     checkCollisions()
 
+    if(disparar){
+      bullet.position.z -= 0.5
+      if(bullet.position.z <= -100){
+        disparar = false;
+        bullet.material.opacity = 0;
+        bullet.position.z = -1.7;
+      }
+    }
   }
 }
 
@@ -245,6 +241,20 @@ function checkCollisions(){
           child.userData.bonusPrice = setupBonus(child, -translateX, -objectParent.position.z)
         }
       }
+
+      const bala = scene.getObjectByName('bala');
+      var posBala = new THREE.Vector3(bala.position.x, bala.position.y, bala.position.z);
+      var posObst = new THREE.Vector3(child.position.x + objectParent.position.x, child.position.y + objectParent.position.y, child.position.z + objectParent.position.z);
+
+      if(posObst.distanceTo(posBala) <= 3){
+        if(child.userData.type === 'obstaculo'){
+          setupObstacle(child, -translateX, -objectParent.position.z)
+          bala.position.set(0,0.4,-1.7)
+          bullet.material.opacity = 0
+          disparar = false;
+        }
+      }
+
     }
   });
 }
@@ -302,7 +312,42 @@ function loadScene(restart){
       
       scene.add(gltf.scene)
     });
-  
+    
+    // Importamos la esfera del disparo
+    var geometry2 = new THREE.SphereGeometry( 0.3,64,32,0 );
+    var material2 = new THREE.MeshPhongMaterial({ emissive: 0xffffdf, transparent: true, opacity: 0});
+    energy = new THREE.Mesh( geometry2, material2 );
+    energy.name = "energy"
+    energy.position.set(0, 0.4, -1.18)
+    scene.add(energy)
+    
+    // Importamos la bala 
+    const geometry3 = new THREE.CapsuleGeometry( 0.1, 0.5, 32, 64 );
+    const material3 = new THREE.MeshBasicMaterial( {color: 0x00ff00, transparent: true, opacity: 0} );
+    bullet = new THREE.Mesh( geometry3, material3 );
+    bullet.rotateX(450 * Math.PI / 180)
+    bullet.position.set(0,0.4,-1.7)
+    bullet.name = 'bala';
+    scene.add(bullet)
+    
+
+    // ** Prueba de colisión ** //
+    const gltfLoader = new GLTFLoader();
+    gltfLoader.load('./models/old/scene.gltf', (gltf) => {
+      gltf.scene.traverse((child) => {
+        if (child instanceof THREE.Mesh){
+          child.name = 'prueba1';
+          scene.add(child)
+          var rand = randomNumber(0.5, 4, "float")
+          child.scale.set(rand, rand, rand)
+          child.position.set(0, 0.3, -80)
+          child.userData = { type: 'obstaculo' }
+          objectParent.add(child)        
+        }
+      });
+    });
+    // ** //
+
     // Creamos y establecemos la animación de la
     // cuadrícula de la escena
     setupGrid();
@@ -314,8 +359,8 @@ function loadScene(restart){
   
     // Creamos los obstáculos y los bonus de la escena
     for( let i = 0; i < 5; i++){
-      spawnObstacle();
-      spawnBonus();
+      //spawnObstacle();
+      //spawnBonus();
     }
   
     var geometry = new THREE.SphereGeometry( 12,64,32,0 );
@@ -673,6 +718,14 @@ function keydown(event){
       case 'ArrowRight':
         newSpeedX = 1.0;
         break;
+      case 'Control':
+        newSpeedX = 0.0;
+        if(energy.material.opacity <= 1){
+          energy.material.opacity += 0.02
+        }else{
+          cargado = true;
+        }
+        break;
       default:
         return;
     }
@@ -691,6 +744,19 @@ function keydown(event){
 //              de pulsar una tecla                                    //
 //---------------------------------------------------------------------//
 function keyup(event){
-  speedX = 0;
+  switch (event.key) {
+    case 'Control':
+      if(cargado){
+        energy.material.opacity = 0
+        bullet.material.opacity = 1
+        disparar = true;
+        cargado = false;
+      }
+      break;
+    default:
+      speedX = 0;
+      break;
+  }
+
   animateShip(0, 0.5)
 }
