@@ -20,7 +20,6 @@ import {GLTFLoader} from "../lib/GLTFLoader.module.js";
 import {OrbitControls} from "../lib/OrbitControls.module.js";
 import {TWEEN} from "../lib/tween.module.min.js";
 import {GUI} from "../lib/lil-gui.module.min.js";
-//import {Howl} from "../lib/howler.min.js";
 
 // Variables estandar de la escena
 let renderer, scene, camera;
@@ -234,10 +233,14 @@ function checkCollisions(){
       const limiteX = 0.3 + child.scale.x / 2;
       const limiteZ = 0.3 + child.scale.z / 2;
 
+      const bala = scene.getObjectByName('bala');
+      var posBala = new THREE.Vector3(bala.position.x, bala.position.y, bala.position.z);
+      var posObst = new THREE.Vector3(child.position.x + objectParent.position.x, child.position.y + objectParent.position.y, child.position.z + objectParent.position.z);
+
       // Calculamos si se ha producido la colisión
       if(childZPos > -limiteZ && Math.abs(child.position.x - (-translateX)) < limiteX){
         // Realizamos las acciones oportunas si chocamos con un objeto
-        if(child.userData.type === 'obstaculo'){
+        if(child.userData.type === 'obstaculo' && !disparar){
           hit_sound.play()
           health -= 10
           divHealth.value = health
@@ -247,20 +250,14 @@ function checkCollisions(){
           }
         
         // Realizamos las acciones oportunas si chocamos con un bonus
-        }else if(child.userData.type === 'bonus'){
+        }else if(child.userData.type === 'bonus' && !disparar){
           bonus_sound.play()
           score += child.userData.bonusPrice
           divScore.innerText = score
 
           child.userData.bonusPrice = setupBonus(child, -translateX, -objectParent.position.z)
         }
-      }
-
-      const bala = scene.getObjectByName('bala');
-      var posBala = new THREE.Vector3(bala.position.x, bala.position.y, bala.position.z);
-      var posObst = new THREE.Vector3(child.position.x + objectParent.position.x, child.position.y + objectParent.position.y, child.position.z + objectParent.position.z);
-
-      if(posObst.distanceTo(posBala) <= 3){
+      }else if(posObst.distanceTo(posBala) <= 3 && disparar){
         if(child.userData.type === 'obstaculo'){
           setupObstacle(child, -translateX, -objectParent.position.z)
           bala.position.set(0,0.4,-1.7)
@@ -346,20 +343,20 @@ function loadScene(restart){
     
 
     // ** Prueba de colisión ** //
-    const gltfLoader = new GLTFLoader();
-    gltfLoader.load('./models/old/scene.gltf', (gltf) => {
-      gltf.scene.traverse((child) => {
-        if (child instanceof THREE.Mesh){
-          child.name = 'prueba1';
-          scene.add(child)
-          var rand = randomNumber(0.5, 4, "float")
-          child.scale.set(rand, rand, rand)
-          child.position.set(0, 0.3, -80)
-          child.userData = { type: 'obstaculo' }
-          objectParent.add(child)        
-        }
-      });
-    });
+    // const gltfLoader = new GLTFLoader();
+    // gltfLoader.load('./models/old/scene.gltf', (gltf) => {
+    //   gltf.scene.traverse((child) => {
+    //     if (child instanceof THREE.Mesh){
+    //       child.name = 'prueba1';
+    //       scene.add(child)
+    //       var rand = randomNumber(0.5, 4, "float")
+    //       child.scale.set(rand, rand, rand)
+    //       child.position.set(0, 0.3, -80)
+    //       child.userData = { type: 'obstaculo' }
+    //       objectParent.add(child)        
+    //     }
+    //   });
+    // });
     // ** //
 
     // Creamos y establecemos la animación de la
@@ -380,10 +377,15 @@ function loadScene(restart){
     var geometry = new THREE.SphereGeometry( 12,64,32,0 );
     //const texture = new THREE.TextureLoader().load( './images/sun.jpg' );
     const material = new THREE.MeshPhongMaterial({ emissive: 0xffffdf});
+    
     var sphere = new THREE.Mesh( geometry, material );
     sphere.position.set(-90, 20, -90)
     
-  
+    // ** Prueba explosion ** //
+    
+    //************************//
+
+
     const haloVertexShader = /*glsl*/`
     varying vec3 vertexNormal;
     void main() {
@@ -740,10 +742,8 @@ function keydown(event){
         }
 
         if(energy.material.opacity <= 1){
-          console.log("pepe")
           energy.material.opacity += 0.02
           divLoad.value = energy.material.opacity * 10
-          console.log(divLoad.value)
         }else{
           cargado = true;
         }
