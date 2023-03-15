@@ -33,7 +33,7 @@ let clock = new THREE.Clock();
 // Variables para la gestion de los objetos de la escena
 let objectParent, esferaSup, esferaInf, cuerpoCap, bonus, energy, bullet, sol;
 let asteroid, partMaterial, partAsteroid;
-let disparar = false, cargado = false, cargando = false;
+let disparar = false, cargado = false, gunReady = true, cont = 0;
 
 // Variables para el control de la informacion de la partida
 let health = 10, score = 0; 
@@ -72,6 +72,7 @@ let divScore = document.getElementById('score')
 let divHealth = document.getElementById('health')
 let divLoad = document.getElementById('load')
 let divDistance = document.getElementById('distance')
+let divgunStatus = document.getElementById('gunStatus')
 
 let divEndPanel = document.getElementById('end-panel')
 let divEndScore = document.getElementById('end-score')
@@ -82,6 +83,7 @@ divScore.innerText = score
 divDistance.innerText = 0
 divHealth.value = 100
 divLoad.value = 0
+divgunStatus.innerText = "Ready!"
 
 // Inicializamos los estados del juego
 let jugar = false;
@@ -206,6 +208,16 @@ function update(){
     // Comprobamos las posibles colisiones con los objetos de la escena
     checkCollisions()
 
+    if(!gunReady){
+      cont++;
+      console.log(cont)
+      if(cont == 400){
+        cont = 0;
+        gunReady = true;
+        divgunStatus.innerText = "Ready!"
+      }
+    }
+
     if(disparar){
       bullet.position.z -= 0.5
       if(bullet.position.z <= -100){
@@ -263,6 +275,7 @@ function checkCollisions(){
           child.children[0].visible = false;
           child.children[1].visible = true;
           child.userData.explosion = 'true'
+          animateExplosion(child);
           setTimeout(() => {
             setupObstacle(child, -translateX, -objectParent.position.z)
           },1000)
@@ -363,7 +376,7 @@ function loadScene(restart){
     scene.add(objectParent);
 
     // Creamos los obstáculos y los bonus de la escena
-    for( let i = 0; i < 10; i++){
+    for( let i = 0; i < 2; i++){
       spawnObstacle();
       //spawnBonus();
     }
@@ -564,7 +577,7 @@ function spawnObstacle(){
     color:0x555555,
     shading: THREE.FlatShading,
   });
-  partMaterial = new THREE.PointsMaterial({ color: 0x31c48D, size: 0.05 })
+  partMaterial = new THREE.PointsMaterial({ color: 0x31c48D, size: 0.5 })
 
   // Creamos la geometría del asteroide
   var asteroidGeom = new THREE.OctahedronGeometry(2, 2)
@@ -734,6 +747,12 @@ function animateShip(target, delay){
   .start();
 }
 
+function animateExplosion(child){
+  var scaleX = child.scale.x
+  new TWEEN.Tween(child.scale).to({x: scaleX*10, y: scaleX*10, z: scaleX*10}, 1000)
+  .start();
+}
+
 
 //---------------------------------------------------------------------//
 // Nombre: keydown                                                     //
@@ -752,17 +771,18 @@ function keydown(event){
         break;
       case 'Control':
         newSpeedX = 0.0;
-        
-        if(energy.material.opacity == 0){
-          load_sound.play();
-        }
-
-        if(energy.material.opacity <= 1){
-          energy.material.opacity += 0.02
-          divLoad.value = energy.material.opacity * 10
-        }else{
-          cargado = true;
-        }
+      if(gunReady){
+          if(energy.material.opacity == 0){
+            load_sound.play();
+          }
+  
+          if(energy.material.opacity <= 1){
+            energy.material.opacity += 0.02
+            divLoad.value = energy.material.opacity * 10
+          }else{
+            cargado = true;
+          }
+      }  
         break;
       default:
         return;
@@ -792,6 +812,8 @@ function keyup(event){
         load_sound.stop();
         shoot_sound.play();
         cargado = false;
+        gunReady = false;
+        divgunStatus.innerText = "Recovering..."
       }
       break;
     default:
