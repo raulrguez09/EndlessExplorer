@@ -31,7 +31,8 @@ let speedZ = 50, speedX = 0, translateX = 0;
 let clock = new THREE.Clock();
 
 // Variables para la gestion de los objetos de la escena
-let objectParent, esferaSup, esferaInf, cuerpoCap, bonus, energy, bullet;
+let objectParent, esferaSup, esferaInf, cuerpoCap, bonus, energy, bullet, sol;
+let asteroid, partMaterial, partAsteroid;
 let disparar = false, cargado = false, cargando = false;
 
 // Variables para el control de la informacion de la partida
@@ -141,13 +142,13 @@ function init(){
   camera.lookAt(0,1,0);
 
   // Creamos las luces de la escena
-  const direccional = new THREE.DirectionalLight(0xFFFFFF,10);
+  const direccional = new THREE.DirectionalLight(0xFFFFFF,5);
   direccional.position.set(-80,20,-80);
   direccional.castShadow = true;
   scene.add(direccional);
   scene.add(new THREE.DirectionalLightHelper(direccional));
 
-  const light = new THREE.AmbientLight( 0x23046b, 1 ); // soft white light
+  const light = new THREE.AmbientLight( 0xdbb4f0, 1.1 ); // soft white light
   scene.add( light );
 
   // Eventos de teclado
@@ -240,7 +241,7 @@ function checkCollisions(){
       // Calculamos si se ha producido la colisión
       if(childZPos > -limiteZ && Math.abs(child.position.x - (-translateX)) < limiteX){
         // Realizamos las acciones oportunas si chocamos con un objeto
-        if(child.userData.type === 'obstaculo' && !disparar){
+        if(child.userData.type === 'obstaculo' && !disparar && child.userData.explosion === 'false'){
           hit_sound.play()
           health -= 10
           divHealth.value = health
@@ -259,9 +260,14 @@ function checkCollisions(){
         }
       }else if(posObst.distanceTo(posBala) <= 3 && disparar){
         if(child.userData.type === 'obstaculo'){
-          setupObstacle(child, -translateX, -objectParent.position.z)
+          child.children[0].visible = false;
+          child.children[1].visible = true;
+          child.userData.explosion = 'true'
+          setTimeout(() => {
+            setupObstacle(child, -translateX, -objectParent.position.z)
+          },1000)
           bala.position.set(0,0.4,-1.7)
-          bullet.material.opacity = 0
+          bala.material.opacity = 0
           disparar = false;
         }
       }
@@ -321,6 +327,12 @@ function loadScene(restart){
       gltf.scene.rotateX(-70 * Math.PI / 180); // rojo
       gltf.scene.rotateZ(45 * Math.PI / 180); // azul
       
+      gltf.scene.traverse((child) => {
+        if (child instanceof THREE.Mesh){
+          child.receiveShadow = true;        
+        }
+      });
+      
       scene.add(gltf.scene)
     });
     
@@ -341,24 +353,6 @@ function loadScene(restart){
     bullet.name = 'bala';
     scene.add(bullet)
     
-
-    // ** Prueba de colisión ** //
-    // const gltfLoader = new GLTFLoader();
-    // gltfLoader.load('./models/old/scene.gltf', (gltf) => {
-    //   gltf.scene.traverse((child) => {
-    //     if (child instanceof THREE.Mesh){
-    //       child.name = 'prueba1';
-    //       scene.add(child)
-    //       var rand = randomNumber(0.5, 4, "float")
-    //       child.scale.set(rand, rand, rand)
-    //       child.position.set(0, 0.3, -80)
-    //       child.userData = { type: 'obstaculo' }
-    //       objectParent.add(child)        
-    //     }
-    //   });
-    // });
-    // ** //
-
     // Creamos y establecemos la animación de la
     // cuadrícula de la escena
     setupGrid();
@@ -367,25 +361,21 @@ function loadScene(restart){
     // y los bonus
     objectParent = new THREE.Group();
     scene.add(objectParent);
-    
+
     // Creamos los obstáculos y los bonus de la escena
-    for( let i = 0; i < 5; i++){
-      //spawnObstacle();
+    for( let i = 0; i < 10; i++){
+      spawnObstacle();
       //spawnBonus();
     }
   
-    var geometry = new THREE.SphereGeometry( 12,64,32,0 );
-    //const texture = new THREE.TextureLoader().load( './images/sun.jpg' );
-    const material = new THREE.MeshPhongMaterial({ emissive: 0xffffdf});
-    
-    var sphere = new THREE.Mesh( geometry, material );
-    sphere.position.set(-90, 20, -90)
-    
-    // ** Prueba explosion ** //
-    
-    //************************//
+    // Creamos y añadimos el sol a la escena
+    var geoSol = new THREE.SphereGeometry( 12,64,32,0 );
+    const matSol = new THREE.MeshPhongMaterial({ emissive: 0xffffdf});
+    sol = new THREE.Mesh( geoSol, matSol );
+    sol.position.set(-90, 20, -90)
+    scene.add(sol);
 
-
+    // Declaramos los shaders para el halo del sol
     const haloVertexShader = /*glsl*/`
     varying vec3 vertexNormal;
     void main() {
@@ -400,17 +390,16 @@ function loadScene(restart){
     gl_FragColor = vec4(0.8, 1.0, 0.6, 0.2) * intensity;
     }
     `;
+
+    // Creamos el halo y lo colocamos alrededor del sol
     const halo = new THREE.Mesh(
-         new THREE.SphereGeometry(12,64,32,0),
-         new THREE.ShaderMaterial({
-              vertexShader:haloVertexShader,
-              fragmentShader:haloFragmentShader,
-              blending: THREE.AdditiveBlending,
-              side: THREE.BackSide
-         })
-    )
-    
-    scene.add(sphere);
+        new THREE.SphereGeometry(12,64,32,0),
+        new THREE.ShaderMaterial({
+            vertexShader:haloVertexShader,
+            fragmentShader:haloFragmentShader,
+            blending: THREE.AdditiveBlending,
+            side: THREE.BackSide
+        }))
     halo.scale.set(1.2, 1.2, 1.2);
     halo.position.set(-90, 20, -90)
     scene.add(halo);
@@ -427,6 +416,8 @@ function loadScene(restart){
       ]
     )
   } else{
+    // Al utilizarse el boton de reset
+    // Volvemos a colocar los obstaculos y bonus creados
     objectParent.traverse((child) => {
       if (child instanceof THREE.Mesh || child instanceof THREE.Object3D){
         if(child.userData.type === 'obstaculo'){
@@ -563,16 +554,35 @@ function setupGUI()
 function spawnObstacle(){
   // Añadimos el obstaculo tanto a la escena como al grupo objectParent
   // Además mandamos al método 'setupObstacle' para modificar la geometría del mismo
-  const gltfLoader = new GLTFLoader();
-  gltfLoader.load('./models/old/scene.gltf', (gltf) => {
-    gltf.scene.traverse((child) => {
-      if (child instanceof THREE.Mesh){
-        scene.add(child)
-        setupObstacle(child);
-        objectParent.add(child)        
-      }
-    });
+  
+  var asteroidFinal = new THREE.Object3D();
+
+  // Creamos el material del asteroide
+  const asteroidtex = new THREE.TextureLoader().load( './images/asteroid3.jpg' );
+  var asteroidMat = new THREE.MeshStandardMaterial({
+    map: asteroidtex,
+    color:0x555555,
+    shading: THREE.FlatShading,
   });
+  partMaterial = new THREE.PointsMaterial({ color: 0x31c48D, size: 0.05 })
+
+  // Creamos la geometría del asteroide
+  var asteroidGeom = new THREE.OctahedronGeometry(2, 2)
+
+  // Creamos el asteroide
+  asteroid = new THREE.Mesh(asteroidGeom, asteroidMat)
+  asteroid.castShadow = true;
+  asteroidFinal.add(asteroid)
+
+  partAsteroid = new THREE.Points(asteroidGeom, partMaterial)
+  partAsteroid.visible = false;
+  asteroidFinal.add(partAsteroid)
+  
+  // Modificamos el tam y pos del obstaculo
+  setupObstacle(asteroidFinal);
+
+  // Añadimos el objeto al grupo
+  objectParent.add(asteroidFinal)
 }
 
 
@@ -587,6 +597,9 @@ function spawnObstacle(){
 //              obstaculo pasado como parámetro                        //
 //---------------------------------------------------------------------//
 function setupObstacle(obstaculo, refXPos = 0, refZPos = 0){
+  obstaculo.children[0].visible = true;
+  obstaculo.children[1].visible = false;
+  
   // Utilizamos un valor aleatorio para modificar el tamaño del obstaculo
   var rand = randomNumber(0.5, 4, "float")
   obstaculo.scale.set(rand, rand, rand)
@@ -595,7 +608,7 @@ function setupObstacle(obstaculo, refXPos = 0, refZPos = 0){
   obstaculo.position.set(refXPos + randomNumber(-30, 30, "float"), obstaculo.scale.y * 0.5, refZPos - 100 - randomNumber(0,100, "float"))
 
   // Añadimos la etiqueta de 'obstaculo' a la malla
-  obstaculo.userData = { type: 'obstaculo' }
+  obstaculo.userData = { type: 'obstaculo', explosion: 'false'}
 }
 
 
@@ -612,15 +625,18 @@ function spawnBonus(){
   esferaSup = new THREE.Mesh(new THREE.SphereGeometry(1,64,32,0,Math.PI),  new THREE.MeshPhongMaterial({color: 0x4B4B4B}));
   esferaSup.rotateX(-90 * Math.PI / 180)
   esferaSup.position.y = 1
+  esferaSup.receiveShadow = true; 
   
   // Creamos la parte inferior del bonus 
   esferaInf = new THREE.Mesh(new THREE.SphereGeometry(1,15,20,0,Math.PI),  new THREE.MeshPhongMaterial({color: 0x4B4B4B}));
   esferaInf.rotateX(90 * Math.PI / 180)
   esferaInf.position.y = -1
+  esferaInf.receiveShadow = true; 
   
   // Creamos el cuerpo del bonus
   cuerpoCap = new THREE.Mesh(new THREE.CylinderGeometry( 1, 1, 2, 32, 64 ),  new THREE.MeshBasicMaterial({color: 0x4ee138}));
-  
+  cuerpoCap.receiveShadow = true; 
+
   // Añadimos las parteas al objeto 3D bonus
   bonus.add(esferaSup)
   bonus.add(esferaInf)
