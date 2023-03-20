@@ -185,7 +185,7 @@ function update(){
         if (childZPos > 0){
           // Una vez sobrepasados, los trasladamos de nuevo en frente de la nave
           // modificando su estructura
-          if(child.userData.type === 'obstaculo'){
+          if(child.userData.type === 'obstaculo' && child.userData.explosion === 'false'){
             setupObstacle(child, -translateX, -objectParent.position.z)
           }else if(child.userData.type === 'bonus'){
             const price = setupBonus(child, -translateX, -objectParent.position.z)
@@ -272,10 +272,8 @@ function checkCollisions(){
           child.children[0].visible = false;
           child.children[1].visible = true;
           child.userData.explosion = 'true'
+          hit_sound.play()
           animateExplosion(child);
-          setTimeout(() => {
-            setupObstacle(child, -translateX, -objectParent.position.z)
-          },1050)
           bala.position.set(0,0.4,-1.7)
           bala.material.opacity = 0
           disparar = false;
@@ -736,6 +734,7 @@ function animateShip(target, delay){
 function animateExplosion(child){
   var scaleX = child.scale.x
   new TWEEN.Tween(child.scale).to({x: scaleX*10, y: scaleX*10, z: scaleX*10}, 1000)
+  .onComplete(function() {child.children[1].visible = false})
   .start();
 }
 
