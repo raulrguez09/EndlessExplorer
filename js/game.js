@@ -17,7 +17,6 @@
 // Modulos de las bibliotecas necesarias
 import * as THREE from "../lib/three.module.js";
 import {GLTFLoader} from "../lib/GLTFLoader.module.js";
-import {OrbitControls} from "../lib/OrbitControls.module.js";
 import {TWEEN} from "../lib/tween.module.min.js";
 import {GUI} from "../lib/lil-gui.module.min.js";
 
@@ -137,10 +136,6 @@ function init(){
   camera.position.z = 5;
   camera.rotateX(-20 * Math.PI / 180)
   camera.position.set(0,1.5,2);
-
-  // cameraControls = new OrbitControls( camera, renderer.domElement );
-  // cameraControls.target.set(0,1,0);
-  // camera.lookAt(0,1,0);
 
   // Creamos las luces de la escena
   const direccional = new THREE.DirectionalLight(0xFFFFFF,5);
@@ -798,7 +793,7 @@ function keyup(event){
     case 32: //space
       load_sound.stop();
       load_SounState = false;
-      
+
       if(cargado){
         energySphere.material.opacity = 0
         divLoad.value = 0
