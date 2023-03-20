@@ -3,7 +3,7 @@
  * 
  * Trabajo #1 AGM: Pagina Web 3D 
  * Descripcion: Se ha llevado a cabo la creación de un juego del genero "endless running", ambientado en una
- * nave espacial que tiene el obbjetivo de sobrevivir viajando por el espacio. Todo este trabajo se ha 
+ * nave espacial que tiene el objetivo de sobrevivir viajando por el espacio. Todo este trabajo se ha 
  * desarrollado empleando WebGL y la biblioteca Three.js
  * 
  * @author <@raulrguez09>, 2023
@@ -31,9 +31,9 @@ let speedZ = 50, speedX = 0, translateX = 0;
 let clock = new THREE.Clock();
 
 // Variables para la gestion de los objetos de la escena
-let objectParent, esferaSup, esferaInf, cuerpoCap, bonus, energy, bullet, sol;
+let objectParent, esferaSup, esferaInf, cuerpoCap, bonus, energySphere, bullet, sol;
 let asteroid, partMaterial, partAsteroid;
-let disparar = false, cargado = false, gunReady = true, cont = 0;
+let disparar = false, cargado = false, gunReady = true, cont = 0, load_SounState = false;
 
 // Variables para el control de la informacion de la partida
 let health = 10, score = 0; 
@@ -89,7 +89,7 @@ divgunStatus.innerText = "Ready!"
 let jugar = false;
 let restart = false;
 
-// Acciones trass pulsar los diferentes botones
+// Acciones tras pulsar los diferentes botones
 document.getElementById('start').onclick = () => {
   jugar = true;
   document.getElementById('intro-panel').style.display = 'none'
@@ -104,7 +104,6 @@ document.getElementById('restart').onclick = () => {
 //***********************************************/
 /*     LLAMADA A LAS ACCIONES DE LA ESCENA      */
 //***********************************************/
-
 init();
 loadScene(restart);
 setupGUI();
@@ -119,7 +118,7 @@ render();
 // Nombre: init                                                        //
 // Descripcion: función que instancia las principales variables de la  //
 //              escenea (motor de render, nodo raíz de la escena,      //
-//              camara) y captura los eventos de tecklado              // 
+//              camara) y captura los eventos de teclado               // 
 //---------------------------------------------------------------------//
 function init(){
   // Instanciar el motor de render
@@ -139,16 +138,15 @@ function init(){
   camera.rotateX(-20 * Math.PI / 180)
   camera.position.set(0,1.5,2);
 
-  cameraControls = new OrbitControls( camera, renderer.domElement );
-  cameraControls.target.set(0,1,0);
-  camera.lookAt(0,1,0);
+  // cameraControls = new OrbitControls( camera, renderer.domElement );
+  // cameraControls.target.set(0,1,0);
+  // camera.lookAt(0,1,0);
 
   // Creamos las luces de la escena
   const direccional = new THREE.DirectionalLight(0xFFFFFF,5);
-  direccional.position.set(-80,20,-80);
+  direccional.position.set(-75,20,-80);
   direccional.castShadow = true;
   scene.add(direccional);
-  scene.add(new THREE.DirectionalLightHelper(direccional));
 
   const light = new THREE.AmbientLight( 0xdbb4f0, 1.1 ); // soft white light
   scene.add( light );
@@ -158,7 +156,7 @@ function init(){
   document.addEventListener('keyup', keyup)
 
   // Ponemos la música de fondo
-  //background_music.play();
+  background_music.play();
 }
 
 
@@ -208,9 +206,9 @@ function update(){
     // Comprobamos las posibles colisiones con los objetos de la escena
     checkCollisions()
 
+    // Comprobamos el estado del arma
     if(!gunReady){
       cont++;
-      console.log(cont)
       if(cont == 400){
         cont = 0;
         gunReady = true;
@@ -218,9 +216,10 @@ function update(){
       }
     }
 
+    // Comprobamos si se ha disparado
     if(disparar){
       bullet.position.z -= 0.5
-      if(bullet.position.z <= -100){
+      if(bullet.position.z <= -90){
         disparar = false;
         bullet.material.opacity = 0;
         bullet.position.z = -1.7;
@@ -243,8 +242,8 @@ function checkCollisions(){
       const childZPos = child.position.z + objectParent.position.z;
 
       // Calculamos la distancia límite que establecemos para la colisión
-      const limiteX = 0.3 + child.scale.x / 2;
-      const limiteZ = 0.3 + child.scale.z / 2;
+      const limiteX = 1.2 + child.scale.x/2;
+      const limiteZ = 1.2 + child.scale.z/2;
 
       const bala = scene.getObjectByName('bala');
       var posBala = new THREE.Vector3(bala.position.x, bala.position.y, bala.position.z);
@@ -270,7 +269,10 @@ function checkCollisions(){
 
           child.userData.bonusPrice = setupBonus(child, -translateX, -objectParent.position.z)
         }
-      }else if(posObst.distanceTo(posBala) <= 3 && disparar){
+      // Calculamos si la bala a colisionado con un obstaculo
+      }else if(posObst.distanceTo(posBala) <= 5 && disparar){
+        // Si hay colision realizamos la animacion de epxlosion
+        // y reseteamos el obstaculo
         if(child.userData.type === 'obstaculo'){
           child.children[0].visible = false;
           child.children[1].visible = true;
@@ -278,7 +280,7 @@ function checkCollisions(){
           animateExplosion(child);
           setTimeout(() => {
             setupObstacle(child, -translateX, -objectParent.position.z)
-          },1000)
+          },1050)
           bala.position.set(0,0.4,-1.7)
           bala.material.opacity = 0
           disparar = false;
@@ -350,17 +352,17 @@ function loadScene(restart){
     });
     
     // Importamos la esfera del disparo
-    var geometry2 = new THREE.SphereGeometry( 0.3,64,32,0 );
-    var material2 = new THREE.MeshPhongMaterial({ emissive: 0xffffdf, transparent: true, opacity: 0});
-    energy = new THREE.Mesh( geometry2, material2 );
-    energy.name = "energy"
-    energy.position.set(0, 0.4, -1.18)
-    scene.add(energy)
+    var esferaBalaGeo = new THREE.SphereGeometry( 0.3,64,32,0 );
+    var esferaBalaMat = new THREE.MeshPhongMaterial({ color: 0x00ff00, transparent: true, opacity: 0});
+    energySphere = new THREE.Mesh( esferaBalaGeo, esferaBalaMat );
+    energySphere.name = "energySphere"
+    energySphere.position.set(0, 0.4, -1.18)
+    scene.add(energySphere)
     
     // Importamos la bala 
-    const geometry3 = new THREE.CapsuleGeometry( 0.1, 0.5, 32, 64 );
-    const material3 = new THREE.MeshBasicMaterial( {color: 0x00ff00, transparent: true, opacity: 0} );
-    bullet = new THREE.Mesh( geometry3, material3 );
+    const balaGeo = new THREE.CapsuleGeometry( 0.1, 0.5, 32, 64 );
+    const balaMat = new THREE.MeshBasicMaterial( {color: 0x00ff00, transparent: true, opacity: 0} );
+    bullet = new THREE.Mesh( balaGeo, balaMat );
     bullet.rotateX(450 * Math.PI / 180)
     bullet.position.set(0,0.4,-1.7)
     bullet.name = 'bala';
@@ -376,27 +378,27 @@ function loadScene(restart){
     scene.add(objectParent);
 
     // Creamos los obstáculos y los bonus de la escena
-    for( let i = 0; i < 2; i++){
+    for( let i = 0; i < 7; i++){
       spawnObstacle();
-      //spawnBonus();
+      spawnBonus();
     }
   
     // Creamos y añadimos el sol a la escena
     var geoSol = new THREE.SphereGeometry( 12,64,32,0 );
     const matSol = new THREE.MeshPhongMaterial({ emissive: 0xffffdf});
     sol = new THREE.Mesh( geoSol, matSol );
-    sol.position.set(-90, 20, -90)
+    sol.position.set(-85, 20, -90)
     scene.add(sol);
 
     // Declaramos los shaders para el halo del sol
-    const haloVertexShader = /*glsl*/`
+    const haloVertexShader = `
     varying vec3 vertexNormal;
     void main() {
          vertexNormal = normal;
          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);   
     }
     `;
-    const haloFragmentShader = /*glsl*/`
+    const haloFragmentShader = `
     varying vec3 vertexNormal;
     void main() {
     float intensity = pow(0.9 - dot(vertexNormal, vec3(0, 0, 1.0)), 2.0);
@@ -405,16 +407,15 @@ function loadScene(restart){
     `;
 
     // Creamos el halo y lo colocamos alrededor del sol
-    const halo = new THREE.Mesh(
-        new THREE.SphereGeometry(12,64,32,0),
-        new THREE.ShaderMaterial({
-            vertexShader:haloVertexShader,
-            fragmentShader:haloFragmentShader,
-            blending: THREE.AdditiveBlending,
-            side: THREE.BackSide
-        }))
+    const halo = new THREE.Mesh(new THREE.SphereGeometry(12,64,32,0),
+      new THREE.ShaderMaterial({
+          vertexShader:haloVertexShader,
+          fragmentShader:haloFragmentShader,
+          blending: THREE.AdditiveBlending,
+          side: THREE.BackSide
+      }))
     halo.scale.set(1.2, 1.2, 1.2);
-    halo.position.set(-90, 20, -90)
+    halo.position.set(-85, 20, -90)
     scene.add(halo);
   
     // Añadimos el fondo de la escena, utilizando la técnica de skyBox
@@ -566,8 +567,7 @@ function setupGUI()
 //---------------------------------------------------------------------//
 function spawnObstacle(){
   // Añadimos el obstaculo tanto a la escena como al grupo objectParent
-  // Además mandamos al método 'setupObstacle' para modificar la geometría del mismo
-  
+  // Además lo mandamos al método 'setupObstacle' para modificar su geometría
   var asteroidFinal = new THREE.Object3D();
 
   // Creamos el material del asteroide
@@ -610,17 +610,19 @@ function spawnObstacle(){
 //              obstaculo pasado como parámetro                        //
 //---------------------------------------------------------------------//
 function setupObstacle(obstaculo, refXPos = 0, refZPos = 0){
+  // Establecemos la visibilidad de los hijos del obstaculo
   obstaculo.children[0].visible = true;
   obstaculo.children[1].visible = false;
   
   // Utilizamos un valor aleatorio para modificar el tamaño del obstaculo
-  var rand = randomNumber(0.5, 4, "float")
+  var rand = THREE.MathUtils.randFloat(0.5, 4)
   obstaculo.scale.set(rand, rand, rand)
 
   // Posicionamos el obstaculo junto en frente de nuestra nave
-  obstaculo.position.set(refXPos + randomNumber(-30, 30, "float"), obstaculo.scale.y * 0.5, refZPos - 100 - randomNumber(0,100, "float"))
+  obstaculo.position.set(refXPos + THREE.MathUtils.randFloat(-30, 30), obstaculo.scale.y * 0.5, refZPos - 100 - THREE.MathUtils.randFloat(0,100))
 
-  // Añadimos la etiqueta de 'obstaculo' a la malla
+  // Añadimos la etiqueta de tipo 'obstaculo' a la malla
+  // Además de la etiqueta 'explosion' para conocer el estado de la misma
   obstaculo.userData = { type: 'obstaculo', explosion: 'false'}
 }
 
@@ -647,7 +649,7 @@ function spawnBonus(){
   esferaInf.receiveShadow = true; 
   
   // Creamos el cuerpo del bonus
-  cuerpoCap = new THREE.Mesh(new THREE.CylinderGeometry( 1, 1, 2, 32, 64 ),  new THREE.MeshBasicMaterial({color: 0x4ee138}));
+  cuerpoCap = new THREE.Mesh(new THREE.CylinderGeometry( 1, 1, 2, 32, 64 ),  new THREE.MeshPhongMaterial({color: 0x2effff}));
   cuerpoCap.receiveShadow = true; 
 
   // Añadimos las parteas al objeto 3D bonus
@@ -655,7 +657,8 @@ function spawnBonus(){
   bonus.add(esferaInf)
   bonus.add(cuerpoCap)
 
-  // Modificamos el tam y pos del objeto
+  // Modificamos el tam y pos del objeto, y el método nos devuelve un precio
+  // asociado con el bonus/score que nos dará el bonus modificado
   const price = setupBonus(bonus)
 
   // Agregamos etiqueta sobre el tipo de objeto y el precio
@@ -680,38 +683,16 @@ function spawnBonus(){
 //---------------------------------------------------------------------//
 function setupBonus(bonus, refXPos = 0, refZPos = 0){
   // Utilizamos un valor aleatorio para modificar el tamaño del bonus
-  const price = randomNumber(5, 20, "int");
+  const price = THREE.MathUtils.randInt(5, 20);
   const ratio = price / 20;
   const size = ratio * 0.5;
   bonus.scale.set(size, size, size)
 
   // Posicionamos el obstaculo junto en frente de nuestra nave
-  bonus.position.set(refXPos + randomNumber(-30, 30, "float"), bonus.scale.y * 0.5, refZPos - 100 - randomNumber(0,100, "float"))
+  bonus.position.set(refXPos + THREE.MathUtils.randFloat(-30, 30), bonus.scale.y * 0.5, refZPos - 100 - THREE.MathUtils.randFloat(0,100))
 
-  // Devolvemos el valor del bonus
+  // Devolvemos el valor/score del bonus
   return price;
-}
-
-
-//---------------------------------------------------------------------//
-// Nombre: randomNumber                                                //
-// Parametros: min (Int/Float) - mínimo valor del intervalo            //
-//             max (Int/Float) - máximo valor del intervalo            //
-//             type (String) - cadena de caracteres que establezca el  //
-//                             tipo de número aleatorio requerido      //
-// Descripcion: función que devuelve un número aleatorio dentro de un  //
-//              intervalo dado                                         //
-// Return: number (Int/Float) - dependiendo del valor de 'type' se     //
-//                              devolverá un número entero o un float  //
-//---------------------------------------------------------------------//
-function randomNumber(min, max, type){
-  if(type === "float"){
-    return Math.random() * (max - min) + min;
-  }else if(type === "int"){
-    min = Math.ceil(min)
-    max = Math.floor(max)
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
 }
 
 
@@ -747,6 +728,16 @@ function animateShip(target, delay){
   .start();
 }
 
+
+//---------------------------------------------------------------------//
+// Nombre: animateExplosion                                            //
+// Parametros: child (THREE.Mesh) - malla que contiene las particulas  //
+//             escondidas de un obstáculo                              //
+// Descripcion: función que realiza la animación de explosión cuando   //
+//              una bala intercepta contra uno de los obstaculos. La   //
+//              animación consisite en aumentar la escala de las       //
+//              particulas escondidas                                  //
+//---------------------------------------------------------------------//
 function animateExplosion(child){
   var scaleX = child.scale.x
   new TWEEN.Tween(child.scale).to({x: scaleX*10, y: scaleX*10, z: scaleX*10}, 1000)
@@ -762,26 +753,27 @@ function animateExplosion(child){
 //---------------------------------------------------------------------//
 function keydown(event){
   let newSpeedX;
-    switch (event.key) {
-      case 'ArrowLeft':
+    switch (event.keyCode) {
+      case 37: //ArrowLeft
         newSpeedX = -1.0;
         break;
-      case 'ArrowRight':
+      case 39: //ArrowRight
         newSpeedX = 1.0;
         break;
-      case 'Control':
+      case 32: //space
         newSpeedX = 0.0;
       if(gunReady){
-          if(energy.material.opacity == 0){
-            load_sound.play();
-          }
-  
-          if(energy.material.opacity <= 1){
-            energy.material.opacity += 0.02
-            divLoad.value = energy.material.opacity * 10
-          }else{
-            cargado = true;
-          }
+        if(load_SounState == false){
+          load_sound.play();
+          load_SounState = true;
+        }
+          
+        if(energySphere.material.opacity <= 1){
+          energySphere.material.opacity += 0.02
+          divLoad.value = energySphere.material.opacity * 10
+        }else{
+          cargado = true;
+        }
       }  
         break;
       default:
@@ -802,10 +794,13 @@ function keydown(event){
 //              de pulsar una tecla                                    //
 //---------------------------------------------------------------------//
 function keyup(event){
-  switch (event.key) {
-    case 'Control':
+  switch (event.keyCode) {
+    case 32: //space
+      load_sound.stop();
+      load_SounState = false;
+      
       if(cargado){
-        energy.material.opacity = 0
+        energySphere.material.opacity = 0
         divLoad.value = 0
         bullet.material.opacity = 1
         disparar = true;
