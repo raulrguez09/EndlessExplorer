@@ -5,5 +5,5 @@ Para este proyecto he llevado a cabo la creación de un videojuego del genero "e
 
 Para probar el videojuego haga click en [este enlace](https://raulrguez09.github.io/EndlessExplorer/)
 
-Para consultar el video explicativo del juego haga click en [este enlace](https://drive.google.com/file/d/19svQAmfEhI5zuh8vNo1todHzwmJowweL/view?usp=sharing)
+Para consultar el video explicativo del juego haga click en [este enlace](https://drive.google.com/file/d/1bRKHsmif-v_YZmpZ4yvZhXIQHmHQ3rrq/view?usp=sharing)
 
