@@ -35,7 +35,7 @@ let asteroid, partMaterial, partAsteroid;
 let disparar = false, cargado = false, gunReady = true, cont = 0, load_SounState = false;
 
 // Variables para el control de la informacion de la partida
-let health = 10, score = 0; 
+let health = 100, score = 0; 
 
 // Inicializamos la música y los efectos de sonido
 let background_music = new Howl({
