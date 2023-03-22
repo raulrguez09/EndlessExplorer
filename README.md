@@ -1,9 +1,6 @@
-## Uso y alcance de este proyecto
-### Este proyecto tiene exclusivamente fines docentes
+## Trabajo #1: Página Web 3D
+### Primer proyecto de la asignatura AGM del MUINF UPV
 
-El proyecto incluye material extraído del proyecto público [Three.js](http://threjs.org) *r140*, bibliotecas de utilidad del texto *"WebGL Programming Guide" de  Kouichi Matsuda y Rodger Lea* y código propio de *<rvivo@upv.es>*.  
+Para este proyecto he llevado a cabo la creación de un videojuego del genero "endless running", ambientado en una nave espacial que tiene el objetivo de sobrevivir viajando por el espacio. Todo este trabajo se ha desarrollado empleando [WebGL](https://get.webgl.org/) y la biblioteca [Three.js](https://threejs.org/)
 
-Para más información sobre su uso y alcance consultar la [wiki](https://github.com/RobVivo/RobVivo.github.io/wiki/INSTRUCCIONES-B%C3%81SICAS)
-
-Para comprobar el funcionamiento del navegador con WebGL
-[cargue esta página](http://raulrguez09.github.io)
+Para probar el videojuego haga click en [este enlace](https://raulrguez09.github.io/EndlessExplorer/)
